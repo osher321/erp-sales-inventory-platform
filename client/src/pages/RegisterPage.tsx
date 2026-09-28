@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api/httpClient";
 import { useToast } from "../components/ui/Toast";
@@ -16,7 +16,6 @@ interface FieldErrors {
 
 export default function RegisterPage() {
   const { isAuthenticated, register } = useAuth();
-  const navigate = useNavigate();
   const { showSuccess } = useToast();
   const { t } = useLanguage();
 
@@ -52,9 +51,9 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
+      // No navigate() here — the isAuthenticated redirect above handles it.
       await register(name.trim(), email.trim(), password);
       showSuccess(t("auth.register.successMessage"));
-      navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof ApiError ? err.message : t("auth.register.genericError");
       setError(message);
@@ -189,8 +188,11 @@ export default function RegisterPage() {
             disabled={isSubmitting}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
-            {isSubmitting ? t("auth.register.creatingAccount") : t("auth.register.createAccountBtn")}
+            <span
+              aria-hidden="true"
+              className={`h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white ${isSubmitting ? "" : "hidden"}`}
+            />
+            <span>{isSubmitting ? t("auth.register.creatingAccount") : t("auth.register.createAccountBtn")}</span>
           </button>
         </form>
 

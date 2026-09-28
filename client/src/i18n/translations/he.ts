@@ -570,4 +570,10 @@ export const he: TranslationDictionary = {
       payloadSummary: "סיכום מטען האינטגרציה",
     },
   },
+
+  errorBoundary: {
+    title: "משהו השתבש",
+    description: "אירעה שגיאה בלתי צפויה. רענון הדף בדרך כלל פותר את הבעיה.",
+    refresh: "רענן דף",
+  },
 };

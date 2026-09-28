@@ -568,6 +568,12 @@ export const en = {
       payloadSummary: "Integration Payload Summary",
     },
   },
+
+  errorBoundary: {
+    title: "Something went wrong",
+    description: "An unexpected error occurred. Refreshing the page usually fixes this.",
+    refresh: "Refresh page",
+  },
 };
 
 export type TranslationDictionary = typeof en;

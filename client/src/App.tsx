@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/ui/Toast";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import LoginPage from "./pages/LoginPage";
@@ -18,6 +19,7 @@ import ApiDocsPage from "./pages/ApiDocsPage";
 function App() {
   return (
     <LanguageProvider>
+    <ErrorBoundary>
     <ToastProvider>
       <AuthProvider>
         <Routes>
@@ -42,6 +44,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </ToastProvider>
+    </ErrorBoundary>
     </LanguageProvider>
   );
 }
