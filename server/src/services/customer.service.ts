@@ -1,24 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma";
 import { ApiError } from "../middleware/errorHandler";
+import {
+  conflictFieldName,
+  isForeignKeyConstraintError,
+  isRecordNotFoundError,
+  isUniqueConstraintError,
+} from "../utils/prismaErrors";
 import type { CreateCustomerInput, UpdateCustomerInput } from "../validators/customer.validators";
-
-function isUniqueConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
-  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
-}
-
-function isRecordNotFoundError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
-  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025";
-}
-
-function isForeignKeyConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
-  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003";
-}
-
-function conflictFieldName(err: Prisma.PrismaClientKnownRequestError): string {
-  const target = err.meta?.target;
-  return Array.isArray(target) ? target.join(", ") : "field";
-}
 
 export async function listCustomers(params: { page: number; limit: number; search?: string }) {
   const { page, limit, search } = params;
