@@ -17,6 +17,11 @@ export async function update(req: Request, res: Response) {
   sendSuccess(res, inventory);
 }
 
+export async function getMovements(req: Request, res: Response) {
+  const movements = await inventoryService.getMovementsByProductId(req.params.productId as string);
+  sendSuccess(res, movements);
+}
+
 export async function lowStock(_req: Request, res: Response) {
   const inventory = await inventoryService.getLowStockInventory();
   sendSuccess(res, inventory);

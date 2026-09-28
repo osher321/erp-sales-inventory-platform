@@ -49,7 +49,7 @@ async function seedDemoUser() {
   const passwordHash = await bcrypt.hash("Demo1234!", 10);
   const user = await prisma.user.create({
     data: {
-      email: "demo@erp-platform.com",
+      email: "demo@example.com",
       password: passwordHash,
       name: "Demo Admin",
       role: "ADMIN",

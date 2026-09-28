@@ -17,7 +17,7 @@ let testProduct: {
 beforeAll(async () => {
   const res = await request(app)
     .post("/api/auth/login")
-    .send({ email: "demo@erp-platform.com", password: "Demo1234!" });
+    .send({ email: "demo@example.com", password: "Demo1234!" });
   token = res.body.data.token;
 
   const product = await prisma.product.findUniqueOrThrow({ where: { sku: "PRD-0013" } });
@@ -89,13 +89,18 @@ describe("Inventory API", () => {
     expect(res.body).toEqual({ success: false, message: "Product not found" });
   });
 
-  it("returns only stockQuantity <= minimumStock from /low-stock", async () => {
+  it("returns only 0 < stockQuantity <= minimumStock from /low-stock, each self-reporting status=LOW_STOCK", async () => {
+    // Regression guard: this endpoint previously included zero-stock products
+    // whose own `status` field said OUT_OF_STOCK — an internal contradiction
+    // between the endpoint's name and its rows. Every row here must now agree.
     const res = await request(app).get("/api/inventory/low-stock").set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeGreaterThan(0);
     for (const item of res.body.data) {
+      expect(item.stockQuantity).toBeGreaterThan(0);
       expect(item.stockQuantity).toBeLessThanOrEqual(item.minimumStock);
+      expect(item.status).toBe("LOW_STOCK");
     }
   });
 
@@ -170,6 +175,42 @@ describe("Inventory API", () => {
     expect(movement!.newQuantity).toBe(newQuantity);
     expect(movement!.quantity).toBe(Math.abs(newQuantity - testProduct.stockQuantity));
     expect(movement!.reason).toBe("Vitest stock adjustment");
+  });
+
+  it("rejects unauthenticated requests to the movements endpoint", async () => {
+    const res = await request(app).get(`/api/inventory/${testProduct.id}/movements`);
+
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  it("returns 404 for movements of a non-existent product", async () => {
+    const res = await request(app).get("/api/inventory/does-not-exist/movements").set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ success: false, message: "Product not found" });
+  });
+
+  it("lists movement history for a product, most recent first", async () => {
+    const res = await request(app)
+      .get(`/api/inventory/${testProduct.id}/movements`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.length).toBeGreaterThan(0);
+
+    const latest = res.body.data[0];
+    expect(latest).toMatchObject({
+      productId: testProduct.id,
+      type: "ADJUSTMENT",
+      reason: "Vitest stock adjustment",
+    });
+
+    const createdAtTimestamps = res.body.data.map((m: { createdAt: string }) => new Date(m.createdAt).getTime());
+    for (let i = 1; i < createdAtTimestamps.length; i++) {
+      expect(createdAtTimestamps[i]).toBeLessThanOrEqual(createdAtTimestamps[i - 1]);
+    }
   });
 
   it("does not create a movement record when the quantity is unchanged", async () => {

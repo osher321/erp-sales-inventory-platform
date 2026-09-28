@@ -23,7 +23,7 @@ export const productsPaths = {
     get: {
       tags: ["Products"],
       summary: "List products",
-      description: "Paginated list with search (name/SKU), category filter, and sorting.",
+      description: "Paginated list with search (name/SKU), category filter, stock-status filter, and sorting.",
       security: bearerSecurity,
       parameters: [
         pageParam,
@@ -31,9 +31,15 @@ export const productsPaths = {
         { name: "search", in: "query", schema: { type: "string" }, description: "Matches against name or SKU." },
         { name: "category", in: "query", schema: { type: "string" }, description: "Exact category match (case-insensitive)." },
         {
+          name: "stockStatus",
+          in: "query",
+          schema: { type: "string", enum: ["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"] },
+          description: "LOW_STOCK matches stockQuantity <= minimumStock (same definition as /low-stock); OUT_OF_STOCK matches stockQuantity = 0; IN_STOCK is the complement of LOW_STOCK.",
+        },
+        {
           name: "sortBy",
           in: "query",
-          schema: { type: "string", enum: ["price", "name", "stockQuantity"] },
+          schema: { type: "string", enum: ["price", "name", "stockQuantity", "createdAt"] },
           description: "Defaults to createdAt desc when omitted.",
         },
         { name: "sortOrder", in: "query", schema: { type: "string", enum: ["asc", "desc"], default: "asc" } },

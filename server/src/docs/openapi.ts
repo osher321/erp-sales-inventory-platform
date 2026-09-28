@@ -3,7 +3,9 @@ import { schemas } from "./schemas";
 import { authPaths } from "./paths/auth.paths";
 import { customersPaths } from "./paths/customers.paths";
 import { healthPaths } from "./paths/health.paths";
+import { integrationPaths } from "./paths/integration.paths";
 import { inventoryPaths } from "./paths/inventory.paths";
+import { logsPaths } from "./paths/logs.paths";
 import { ordersPaths } from "./paths/orders.paths";
 import { productsPaths } from "./paths/products.paths";
 
@@ -18,7 +20,7 @@ export const openApiDocument = {
       '`{"success": true, "data": ...}` on success, `{"success": false, "message": "..."}` on error. ' +
       "Every endpoint except /api/health, /api/auth/login, and /api/auth/register requires a Bearer JWT " +
       '— use the "Authorize" button above with a token from POST /api/auth/login (demo account: ' +
-      "demo@erp-platform.com / Demo1234!).",
+      "demo@example.com / Demo1234!).",
   },
   servers: [{ url: "/", description: "Current server" }],
   tags: [
@@ -28,6 +30,13 @@ export const openApiDocument = {
     { name: "Products", description: "Product catalog CRUD, search, and stock-level lookups" },
     { name: "Inventory", description: "Stock-quantity view and updates, separate from catalog data" },
     { name: "Orders", description: "Sales order creation (atomic, stock-checked) and lifecycle" },
+    { name: "Logs", description: "Automatically recorded API request history" },
+    {
+      name: "Priority Integration",
+      description:
+        "Priority Integration Simulator — simulates syncing real local data to a Priority-style external ERP. " +
+        "No real outbound network call is ever made; this is a demo of integration architecture, not a live connection.",
+    },
   ],
   components: {
     securitySchemes: {
@@ -48,5 +57,7 @@ export const openApiDocument = {
     ...productsPaths,
     ...inventoryPaths,
     ...ordersPaths,
+    ...logsPaths,
+    ...integrationPaths,
   },
 };

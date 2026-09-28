@@ -24,7 +24,7 @@ export const schemas = {
     description: "Public user shape — never includes the password hash.",
     properties: {
       id: { type: "string", example: "cmuktybhc0000sbm8a38dmap0" },
-      email: { type: "string", format: "email", example: "demo@erp-platform.com" },
+      email: { type: "string", format: "email", example: "demo@example.com" },
       name: { type: "string", example: "Demo Admin" },
       role: { type: "string", enum: ["ADMIN", "USER"], example: "ADMIN" },
     },
@@ -195,6 +195,130 @@ export const schemas = {
       reason: { type: "string", minLength: 1, example: "Manual stocktake correction" },
     },
     required: ["stockQuantity"],
+  },
+
+  InventoryMovement: {
+    type: "object",
+    properties: {
+      id: { type: "string", example: "cmuktybhl0002sbm8x004uvl5" },
+      productId: { type: "string", example: "cmukukkqx000bsbb4z4uu5xpt" },
+      type: {
+        type: "string",
+        enum: ["STOCK_IN", "STOCK_OUT", "ADJUSTMENT", "SALE", "RETURN"],
+        example: "ADJUSTMENT",
+      },
+      quantity: { type: "integer", description: "Absolute size of the change.", example: 15 },
+      previousQuantity: { type: "integer", example: 85 },
+      newQuantity: { type: "integer", example: 100 },
+      reason: { type: "string", nullable: true, example: "Manual stocktake correction" },
+      createdAt: { type: "string", format: "date-time" },
+    },
+    required: ["id", "productId", "type", "quantity", "previousQuantity", "newQuantity", "createdAt"],
+  },
+
+  ApiLog: {
+    type: "object",
+    description: "One recorded API request. Never includes request bodies, headers, or Authorization — only method, path, outcome, and timing.",
+    properties: {
+      id: { type: "string", example: "cmuktybhl0004sbm8x004uvl2" },
+      method: { type: "string", enum: ["GET", "POST", "PUT", "PATCH", "DELETE"], example: "POST" },
+      endpoint: { type: "string", example: "/api/orders" },
+      statusCode: { type: "integer", example: 201 },
+      responseTime: { type: "integer", description: "Milliseconds.", example: 42 },
+      userEmail: { type: "string", nullable: true, description: "Authenticated caller, if any.", example: "demo@example.com" },
+      errorMessage: { type: "string", nullable: true, description: "Present only when statusCode >= 400.", example: "Insufficient stock for \"27-inch LED Monitor\"" },
+      timestamp: { type: "string", format: "date-time" },
+    },
+    required: ["id", "method", "endpoint", "statusCode", "responseTime", "timestamp"],
+  },
+
+  LogListData: {
+    type: "object",
+    properties: {
+      logs: { type: "array", items: { $ref: "#/components/schemas/ApiLog" } },
+      pagination: { $ref: "#/components/schemas/Pagination" },
+    },
+    required: ["logs", "pagination"],
+  },
+
+  IntegrationSync: {
+    type: "object",
+    description:
+      "One simulated Priority sync run for a single entity type. This is a simulator — no real request is ever " +
+      "sent to an external Priority system.",
+    properties: {
+      id: { type: "string", example: "cmuktybhl0006sbm8x004uvl7" },
+      entity: { type: "string", enum: ["CUSTOMER", "PRODUCT", "INVENTORY", "ORDER"], example: "INVENTORY" },
+      status: { type: "string", enum: ["SUCCESS", "FAILED", "PARTIAL"], example: "PARTIAL" },
+      startedAt: { type: "string", format: "date-time" },
+      completedAt: { type: "string", format: "date-time" },
+      durationMs: { type: "integer", example: 220 },
+      recordsProcessed: { type: "integer", example: 20 },
+      recordsSucceeded: { type: "integer", example: 18 },
+      recordsFailed: { type: "integer", example: 2 },
+      errorMessage: {
+        type: "string",
+        nullable: true,
+        example: "2 of 20 records failed: zero-quantity stock records are not accepted by the external system.",
+      },
+      payloadSummary: {
+        type: "string",
+        nullable: true,
+        description: "JSON sample (first few records) of the Integration DTOs simulated for this sync, truncated.",
+      },
+      createdAt: { type: "string", format: "date-time" },
+    },
+    required: [
+      "id",
+      "entity",
+      "status",
+      "startedAt",
+      "completedAt",
+      "durationMs",
+      "recordsProcessed",
+      "recordsSucceeded",
+      "recordsFailed",
+      "createdAt",
+    ],
+  },
+
+  IntegrationHistoryData: {
+    type: "object",
+    properties: {
+      syncs: { type: "array", items: { $ref: "#/components/schemas/IntegrationSync" } },
+      pagination: { $ref: "#/components/schemas/Pagination" },
+    },
+    required: ["syncs", "pagination"],
+  },
+
+  IntegrationStatus: {
+    type: "object",
+    description: "Simulated connection status — never a real link to Priority.",
+    properties: {
+      externalSystem: { type: "string", example: "PRIORITY_SIMULATOR" },
+      connectionStatus: {
+        type: "string",
+        example: "Priority Integration Simulator — simulated ERP connection, not a live link",
+      },
+      lastSyncAt: { type: "string", format: "date-time", nullable: true },
+      totalSyncs: { type: "integer", example: 12 },
+      successfulSyncs: { type: "integer", example: 9 },
+      failedSyncs: { type: "integer", example: 0 },
+      partialSyncs: { type: "integer", example: 3 },
+    },
+    required: ["externalSystem", "connectionStatus", "lastSyncAt", "totalSyncs", "successfulSyncs", "failedSyncs", "partialSyncs"],
+  },
+
+  IntegrationSyncAllResult: {
+    type: "object",
+    properties: {
+      status: { type: "string", enum: ["SUCCESS", "FAILED", "PARTIAL"] },
+      recordsProcessed: { type: "integer" },
+      recordsSucceeded: { type: "integer" },
+      recordsFailed: { type: "integer" },
+      results: { type: "array", items: { $ref: "#/components/schemas/IntegrationSync" } },
+    },
+    required: ["status", "recordsProcessed", "recordsSucceeded", "recordsFailed", "results"],
   },
 
   OrderItemLine: {

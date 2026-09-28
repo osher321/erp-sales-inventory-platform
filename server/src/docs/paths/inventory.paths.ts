@@ -110,4 +110,32 @@ export const inventoryPaths = {
       },
     },
   },
+
+  "/api/inventory/{productId}/movements": {
+    get: {
+      tags: ["Inventory"],
+      summary: "List inventory movement history for a product",
+      description: "Returns every InventoryMovement row for the product (stock adjustments and sale deductions), most recent first.",
+      security: bearerSecurity,
+      parameters: [productIdParam],
+      responses: {
+        "200": {
+          description: "Movement history retrieved.",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  success: { type: "boolean", example: true },
+                  data: { type: "array", items: { $ref: "#/components/schemas/InventoryMovement" } },
+                },
+              },
+            },
+          },
+        },
+        "401": { $ref: "#/components/responses/Unauthorized" },
+        "404": productNotFound,
+      },
+    },
+  },
 };

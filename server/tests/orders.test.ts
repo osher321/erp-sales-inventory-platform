@@ -16,7 +16,7 @@ let createdOrderNumber: string;
 beforeAll(async () => {
   const res = await request(app)
     .post("/api/auth/login")
-    .send({ email: "demo@erp-platform.com", password: "Demo1234!" });
+    .send({ email: "demo@example.com", password: "Demo1234!" });
   token = res.body.data.token;
 
   customer = await prisma.customer.create({

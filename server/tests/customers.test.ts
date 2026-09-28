@@ -14,7 +14,7 @@ let createdCustomerId: string;
 beforeAll(async () => {
   const res = await request(app)
     .post("/api/auth/login")
-    .send({ email: "demo@erp-platform.com", password: "Demo1234!" });
+    .send({ email: "demo@example.com", password: "Demo1234!" });
   token = res.body.data.token;
 });
 
@@ -119,6 +119,16 @@ describe("Customers API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.city).toBe("Haifa");
+  });
+
+  it("finds a customer by full name (firstName + lastName concatenated)", async () => {
+    const res = await request(app)
+      .get("/api/customers?search=Vitest%20Tester")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.customers.some((c: { id: string }) => c.id === createdCustomerId)).toBe(true);
   });
 
   it("deletes a customer", async () => {

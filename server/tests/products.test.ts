@@ -14,7 +14,7 @@ let baselineTotal: number;
 beforeAll(async () => {
   const res = await request(app)
     .post("/api/auth/login")
-    .send({ email: "demo@erp-platform.com", password: "Demo1234!" });
+    .send({ email: "demo@example.com", password: "Demo1234!" });
   token = res.body.data.token;
 
   baselineTotal = await prisma.product.count();
@@ -91,12 +91,83 @@ describe("Products API", () => {
     expect(descNames).toEqual([...ascNames].reverse());
   });
 
-  it("returns products where stockQuantity <= minimumStock from /low-stock", async () => {
+  it("sorts by createdAt ascending and descending as exact reverses", async () => {
+    const [ascRes, descRes] = await Promise.all([
+      request(app).get("/api/products?sortBy=createdAt&sortOrder=asc&limit=100").set("Authorization", `Bearer ${token}`),
+      request(app).get("/api/products?sortBy=createdAt&sortOrder=desc&limit=100").set("Authorization", `Bearer ${token}`),
+    ]);
+
+    expect(ascRes.status).toBe(200);
+    expect(descRes.status).toBe(200);
+
+    const ascIds = ascRes.body.data.products.map((p: { id: string }) => p.id);
+    const descIds = descRes.body.data.products.map((p: { id: string }) => p.id);
+    expect(descIds).toEqual([...ascIds].reverse());
+  });
+
+  it("filters the paginated list by stockStatus=OUT_OF_STOCK", async () => {
+    const res = await request(app)
+      .get("/api/products?stockStatus=OUT_OF_STOCK&limit=100")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.products.length).toBeGreaterThan(0);
+    for (const product of res.body.data.products) {
+      expect(product.stockQuantity).toBe(0);
+    }
+  });
+
+  it("filters the paginated list by stockStatus=LOW_STOCK consistently with /low-stock", async () => {
+    const [filtered, dedicated] = await Promise.all([
+      request(app).get("/api/products?stockStatus=LOW_STOCK&limit=100").set("Authorization", `Bearer ${token}`),
+      request(app).get("/api/products/low-stock").set("Authorization", `Bearer ${token}`),
+    ]);
+
+    expect(filtered.status).toBe(200);
+    const filteredIds = filtered.body.data.products.map((p: { id: string }) => p.id).sort();
+    const dedicatedIds = dedicated.body.data.map((p: { id: string }) => p.id).sort();
+    expect(filteredIds).toEqual(dedicatedIds);
+  });
+
+  it("stockStatus IN_STOCK/LOW_STOCK/OUT_OF_STOCK partition the catalog with no overlap", async () => {
+    // Mutually exclusive by construction (mirrors /api/inventory's computeStatus()):
+    // a zero-stock product is OUT_OF_STOCK only, never also counted as LOW_STOCK.
+    const [inStock, lowStock, outOfStock, all] = await Promise.all([
+      request(app).get("/api/products?stockStatus=IN_STOCK&limit=100").set("Authorization", `Bearer ${token}`),
+      request(app).get("/api/products?stockStatus=LOW_STOCK&limit=100").set("Authorization", `Bearer ${token}`),
+      request(app).get("/api/products?stockStatus=OUT_OF_STOCK&limit=100").set("Authorization", `Bearer ${token}`),
+      request(app).get("/api/products?limit=100").set("Authorization", `Bearer ${token}`),
+    ]);
+
+    const inStockIds = inStock.body.data.products.map((p: { id: string }) => p.id).sort();
+    const lowStockIds = lowStock.body.data.products.map((p: { id: string }) => p.id).sort();
+    const outOfStockIds = outOfStock.body.data.products.map((p: { id: string }) => p.id).sort();
+    const allIds = all.body.data.products.map((p: { id: string }) => p.id).sort();
+
+    expect(inStockIds.length + lowStockIds.length + outOfStockIds.length).toBe(allIds.length);
+    expect(inStockIds.some((id: string) => lowStockIds.includes(id))).toBe(false);
+    expect(lowStockIds.some((id: string) => outOfStockIds.includes(id))).toBe(false);
+    expect(inStockIds.some((id: string) => outOfStockIds.includes(id))).toBe(false);
+
+    for (const product of inStock.body.data.products) {
+      expect(product.stockQuantity).toBeGreaterThan(product.minimumStock);
+    }
+    for (const product of lowStock.body.data.products) {
+      expect(product.stockQuantity).toBeGreaterThan(0);
+      expect(product.stockQuantity).toBeLessThanOrEqual(product.minimumStock);
+    }
+    for (const product of outOfStock.body.data.products) {
+      expect(product.stockQuantity).toBe(0);
+    }
+  });
+
+  it("returns products where 0 < stockQuantity <= minimumStock from /low-stock (excludes zero-stock)", async () => {
     const res = await request(app).get("/api/products/low-stock").set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeGreaterThan(0);
     for (const product of res.body.data) {
+      expect(product.stockQuantity).toBeGreaterThan(0);
       expect(product.stockQuantity).toBeLessThanOrEqual(product.minimumStock);
     }
   });

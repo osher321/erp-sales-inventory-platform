@@ -14,7 +14,7 @@ export const authPaths = {
             schema: {
               type: "object",
               properties: {
-                email: { type: "string", format: "email", example: "demo@erp-platform.com" },
+                email: { type: "string", format: "email", example: "demo@example.com" },
                 password: { type: "string", example: "Demo1234!" },
               },
               required: ["email", "password"],

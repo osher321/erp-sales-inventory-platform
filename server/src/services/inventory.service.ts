@@ -54,13 +54,28 @@ export async function getInventoryByProductId(productId: string) {
   return toInventoryView(product);
 }
 
+export async function getMovementsByProductId(productId: string) {
+  const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
+  if (!product) {
+    throw new ApiError(404, "Product not found");
+  }
+
+  return prisma.inventoryMovement.findMany({
+    where: { productId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Excludes zero-stock rows so every returned item's own computed status is
+// actually LOW_STOCK, never OUT_OF_STOCK — this endpoint's name and its rows'
+// status must agree, and stays consistent with getOutOfStockInventory() below.
 export async function getLowStockInventory() {
   const products = await prisma.$queryRaw<
     Array<{ id: string; sku: string; name: string; stockQuantity: number; minimumStock: number }>
   >`
     SELECT id, sku, name, "stockQuantity", "minimumStock"
     FROM "Product"
-    WHERE "stockQuantity" <= "minimumStock"
+    WHERE "stockQuantity" > 0 AND "stockQuantity" <= "minimumStock"
     ORDER BY "stockQuantity" ASC
   `;
   return products.map(toInventoryView);

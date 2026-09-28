@@ -29,6 +29,19 @@ enum InventoryMovementType {
   RETURN
 }
 
+enum IntegrationEntity {
+  CUSTOMER
+  PRODUCT
+  INVENTORY
+  ORDER
+}
+
+enum IntegrationSyncStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -124,7 +137,31 @@ model ApiLog {
   endpoint     String
   statusCode   Int
   responseTime Int
+  userEmail    String?
+  errorMessage String?
   timestamp    DateTime @default(now())
 
   @@index([timestamp])
+}
+
+// Records one simulated Priority sync run per entity. "Sync All" creates one
+// row per entity (never an "ALL" row), so this table stays a flat, filterable
+// history. Purely a record of a simulated outbound sync — never touches
+// Customer/Product/Order/InventoryMovement data.
+model IntegrationSync {
+  id               String                @id @default(cuid())
+  entity           IntegrationEntity
+  status           IntegrationSyncStatus
+  startedAt        DateTime
+  completedAt      DateTime
+  durationMs       Int
+  recordsProcessed Int
+  recordsSucceeded Int
+  recordsFailed    Int
+  errorMessage     String?
+  payloadSummary   String?
+  createdAt        DateTime              @default(now())
+
+  @@index([createdAt])
+  @@index([entity])
 }

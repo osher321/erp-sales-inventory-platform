@@ -16,13 +16,15 @@ export const updateProductSchema = createProductSchema
     message: "At least one field must be provided",
   });
 
-const SORTABLE_FIELDS = ["price", "name", "stockQuantity"] as const;
+const SORTABLE_FIELDS = ["price", "name", "stockQuantity", "createdAt"] as const;
+const STOCK_STATUSES = ["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"] as const;
 
 export const productListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().trim().optional(),
   category: z.string().trim().optional(),
+  stockStatus: z.enum(STOCK_STATUSES).optional(),
   sortBy: z.enum(SORTABLE_FIELDS).optional(),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
@@ -31,3 +33,4 @@ export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 export type SortableField = (typeof SORTABLE_FIELDS)[number];
+export type StockStatusValue = (typeof STOCK_STATUSES)[number];

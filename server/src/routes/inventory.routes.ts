@@ -15,5 +15,6 @@ router.get("/out-of-stock", inventoryController.outOfStock);
 router.get("/", inventoryController.list);
 router.get("/:productId", inventoryController.getByProductId);
 router.put("/:productId", validateBody(updateInventorySchema), inventoryController.update);
+router.get("/:productId/movements", inventoryController.getMovements);
 
 export default router;
