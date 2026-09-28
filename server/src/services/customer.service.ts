@@ -1,0 +1,98 @@
+import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma";
+import { ApiError } from "../middleware/errorHandler";
+import type { CreateCustomerInput, UpdateCustomerInput } from "../validators/customer.validators";
+
+function isUniqueConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+}
+
+function isRecordNotFoundError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025";
+}
+
+function isForeignKeyConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003";
+}
+
+function conflictFieldName(err: Prisma.PrismaClientKnownRequestError): string {
+  const target = err.meta?.target;
+  return Array.isArray(target) ? target.join(", ") : "field";
+}
+
+export async function listCustomers(params: { page: number; limit: number; search?: string }) {
+  const { page, limit, search } = params;
+
+  const where: Prisma.CustomerWhereInput = search
+    ? {
+        OR: [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { customerNumber: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  const [customers, total] = await Promise.all([
+    prisma.customer.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.customer.count({ where }),
+  ]);
+
+  return {
+    customers,
+    pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+  };
+}
+
+export async function getCustomerById(id: string) {
+  const customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer) {
+    throw new ApiError(404, "Customer not found");
+  }
+  return customer;
+}
+
+export async function createCustomer(input: CreateCustomerInput) {
+  try {
+    return await prisma.customer.create({ data: input });
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      throw new ApiError(409, `Customer with this ${conflictFieldName(err)} already exists`);
+    }
+    throw err;
+  }
+}
+
+export async function updateCustomer(id: string, input: UpdateCustomerInput) {
+  try {
+    return await prisma.customer.update({ where: { id }, data: input });
+  } catch (err) {
+    if (isRecordNotFoundError(err)) {
+      throw new ApiError(404, "Customer not found");
+    }
+    if (isUniqueConstraintError(err)) {
+      throw new ApiError(409, `Customer with this ${conflictFieldName(err)} already exists`);
+    }
+    throw err;
+  }
+}
+
+export async function deleteCustomer(id: string) {
+  try {
+    await prisma.customer.delete({ where: { id } });
+  } catch (err) {
+    if (isRecordNotFoundError(err)) {
+      throw new ApiError(404, "Customer not found");
+    }
+    if (isForeignKeyConstraintError(err)) {
+      throw new ApiError(409, "Cannot delete customer with existing orders");
+    }
+    throw err;
+  }
+}

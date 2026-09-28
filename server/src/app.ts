@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import healthRoutes from "./routes/health.routes";
+import apiRouter from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -20,7 +20,7 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use("/api", healthRoutes);
+app.use("/api", apiRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
