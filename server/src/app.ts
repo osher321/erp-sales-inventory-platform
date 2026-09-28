@@ -1,10 +1,16 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
+import { openApiDocument } from "./docs/openapi";
 import apiRouter from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 const app = express();
+
+// Swagger UI renders inline <script>/<style> tags, which the default helmet CSP
+// blocks — relax CSP only for this path, before the strict global helmet below.
+app.use("/api-docs", helmet({ contentSecurityPolicy: false }), swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 app.use(helmet());
 app.use(cors());
