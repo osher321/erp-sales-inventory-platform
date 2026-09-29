@@ -14,7 +14,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
         onClick={() => setLanguage("en")}
         aria-pressed={language === "en"}
         title="English"
-        className={`whitespace-nowrap rounded px-2 py-1 text-xs font-medium transition-colors ${
+        className={`whitespace-nowrap rounded px-3 py-2 text-xs font-medium transition-colors ${
           language === "en"
             ? "bg-indigo-500 text-white"
             : "text-slate-600 hover:bg-slate-100"
@@ -27,7 +27,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
         onClick={() => setLanguage("he")}
         aria-pressed={language === "he"}
         title="עברית"
-        className={`whitespace-nowrap rounded px-2 py-1 text-xs font-medium transition-colors ${
+        className={`whitespace-nowrap rounded px-3 py-2 text-xs font-medium transition-colors ${
           language === "he"
             ? "bg-indigo-500 text-white"
             : "text-slate-600 hover:bg-slate-100"
